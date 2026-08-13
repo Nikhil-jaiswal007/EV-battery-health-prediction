@@ -8,7 +8,7 @@ degradation data.
 ## Problem Statement
 
 Battery degradation directly affects the performance, range,
-reliability, and safety of electric vehicles. This project aims
+reliability, and safety of electric vehicles. This project aim
 to develop a machine learning model that can estimate battery
 State of Health from historical battery measurements.
 
