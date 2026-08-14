@@ -3,7 +3,7 @@
 
 A machine learning project for predicting the State of Health (SOH)
 of electric vehicle batteries using battery operating and
-degradation data.
+degradation Data.
 
 ## Problem Statement
 
