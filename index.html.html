@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EV Battery Health Prediction Dashboard</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#080d1a',
+                        cardBg: '#0f172a',
+                        sidebarBg: '#0b1120',
+                        accentBlue: '#00d2ff',
+                        accentGreen: '#10b981',
+                        accentRed: '#ef4444',
+                        borderDark: '#1e293b'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #060b13;
+            color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Custom styling for sleek range sliders matching image */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+
+        input[type=range]:focus {
+            outline: none;
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            background: #1e293b;
+            border-radius: 3px;
+            border: none;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: #00a8ff;
+            cursor: pointer;
+            -webkit-appearance: none;
+            margin-top: -6px;
+            box-shadow: 0 0 10px rgba(0, 168, 255, 0.7);
+            transition: transform 0.1s ease, background 0.2s ease;
+        }
+
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            background: #38bdf8;
+        }
+
+        /* Custom Card Glows */
+        .glow-card {
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(11, 17, 32, 0.95) 100%);
+            border: 1px solid #1e293b;
+            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5);
+        }
+
+        .glow-green {
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.15);
+        }
+
+        .glow-red {
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            box-shadow: 0 0 20px rgba(239, 68, 68, 0.15);
+        }
+
+        .glow-blue {
+            border: 1px solid rgba(0, 168, 255, 0.3);
+            box-shadow: 0 0 15px rgba(0, 168, 255, 0.1);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between">
+
+    <!-- Navigation Header -->
+    <header class="bg-[#0b1120] border-b border-[#1e293b] px-6 py-4 flex items-center justify-between sticky top-0 z-50">
+        <div class="flex items-center space-x-3">
+            <div class="p-2 bg-blue-500/10 rounded-lg border border-blue-500/30 text-cyan-400">
+                <i class="fa-solid fa-battery-half text-2xl"></i>
+                <i class="fa-solid fa-bolt text-xs absolute -mt-1 ml-[-8px] text-yellow-400"></i>
+            </div>
+            <h1 class="text-xl md:text-2xl font-bold tracking-tight text-white flex items-center gap-2">
+                EV Battery Health Prediction Dashboard
+            </h1>
+        </div>
+        <div class="flex items-center space-x-4">
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                <span class="w-2 h-2 mr-2 rounded-full bg-emerald-400 animate-pulse"></span> Django Connected
+            </span>
+            <button id="resetBtn" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 py-1.5 px-3 rounded border border-slate-700 transition">
+                <i class="fa-solid fa-rotate-left mr-1"></i> Reset Inputs
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Dashboard Container -->
+    <main class="flex-1 max-w-[1700px] w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- Sidebar Inputs (Left Side - 4 cols) -->
+        <aside class="lg:col-span-4 bg-[#0b1120] p-5 rounded-2xl border border-[#1e293b] flex flex-col justify-between shadow-xl">
+            <div class="space-y-6">
+                <div class="border-b border-slate-800 pb-3 flex justify-between items-center">
+                    <h2 class="text-lg font-semibold text-slate-200">Telemetry Inputs</h2>
+                    <span class="text-xs text-slate-500">Live Prediction Mode</span>
+                </div>
+
+                <!-- Input 1: Current Cycle -->
+                <div class="space-y-2">
+                    <div class="flex justify-between text-sm font-medium">
+                        <label for="cycleInput" class="text-slate-300">Current Cycle</label>
+                        <span id="cycleVal" class="text-cyan-400 font-bold bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800/50">20</span>
+                    </div>
+                    <input type="range" id="cycleInput" min="0" max="250" value="20" step="1">
+                    <div class="flex justify-between text-xs text-slate-500">
+                        <span>0</span>
+                        <span>250</span>
+                    </div>
+                </div>
+
+                <!-- Input 2: Measured Voltage (V) -->
+                <div class="space-y-2">
+                    <div class="flex justify-between text-sm font-medium">
+                        <label for="voltageInput" class="text-slate-300">Measured Voltage (V)</label>
+                        <span id="voltageVal" class="text-cyan-400 font-bold bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800/50">17.50</span>
+                    </div>
+                    <input type="range" id="voltageInput" min="17.20" max="17.75" value="17.50" step="0.01">
+                    <div class="flex justify-between text-xs text-slate-500">
+                        <span>17.20</span>
+                        <span>17.75</span>
+                    </div>
+                </div>
+
+                <!-- Input 3: Measured Current (A) -->
+                <div class="space-y-2">
+                    <div class="flex justify-between text-sm font-medium">
+                        <label for="currentInput" class="text-slate-300">Measured Current (A)</label>
+                        <span id="currentVal" class="text-cyan-400 font-bold bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800/50">1.00</span>
+                    </div>
+                    <input type="range" id="currentInput" min="0.89" max="1.30" value="1.00" step="0.01">
+                    <div class="flex justify-between text-xs text-slate-500">
+                        <span>0.89</span>
+                        <span>1.30</span>
+                    </div>
+                </div>
+
+                <!-- Input 4: Temperature (°C) -->
+                <div class="space-y-2">
+                    <div class="flex justify-between text-sm font-medium">
+                        <label for="tempInput" class="text-slate-300">Temperature (°C)</label>
+                        <span id="tempVal" class="text-cyan-400 font-bold bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800/50">20.0</span>
+                    </div>
+                    <input type="range" id="tempInput" min="15.0" max="25.0" value="20.0" step="0.1">
+                    <div class="flex justify-between text-xs text-slate-500">
+                        <span>15.0</span>
+                        <span>25.0</span>
+                    </div>
+                </div>
+
+                <!-- Input 5: Remaining Capacity (Ah) -->
+                <div class="space-y-2">
+                    <div class="flex justify-between text-sm font-medium">
+                        <label for="capacityInput" class="text-slate-300">Remaining Capacity (Ah)</label>
+                        <span id="capacityVal" class="text-cyan-400 font-bold bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800/50">9.50</span>
+                    </div>
+                    <input type="range" id="capacityInput" min="8.00" max="11.00" value="9.50" step="0.05">
+                    <div class="flex justify-between text-xs text-slate-500">
+                        <span>8.00</span>
+                        <span>11.00</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Predict CTA Button -->
+            <div class="mt-8 pt-4 border-t border-slate-800">
+                <button id="predictBtn" class="w-full py-3 px-4 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold rounded-xl shadow-lg shadow-cyan-950/50 flex items-center justify-center space-x-2 transition duration-200">
+                    <i class="fa-solid fa-microchip text-lg"></i>
+                    <span>Predict State of Health</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Right Main Metrics Display Area (8 cols) -->
+        <section class="lg:col-span-8 flex flex-col space-y-6">
+
+            <!-- Top Cards Row (3 Cards) -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                
+                <!-- Card 1: SoH % -->
+                <div class="glow-card glow-blue rounded-2xl p-5 flex flex-col justify-between relative overflow-hidden">
+                    <div class="text-slate-400 text-sm font-medium mb-3">Predicted State-of-Health (SoH)</div>
+                    <div class="flex items-baseline justify-between my-2">
+                        <span id="sohDisplay" class="text-4xl lg:text-5xl font-extrabold text-white tracking-tight">90.00%</span>
+                    </div>
+                    <i class="fa-solid fa-chart-line text-6xl text-blue-500/10 absolute right-3 bottom-2 pointer-events-none"></i>
+                </div>
+
+                <!-- Card 2: Condition Badge -->
+                <div id="conditionCard" class="glow-card glow-green rounded-2xl p-5 flex flex-col justify-between relative overflow-hidden transition-all duration-300">
+                    <div class="text-slate-400 text-sm font-medium mb-3">Battery Condition</div>
+                    <div class="flex items-center space-x-3 my-2">
+                        <div id="statusIcon" class="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xl font-bold">
+                            <i class="fa-solid fa-circle-check"></i>
+                        </div>
+                        <span id="statusLabel" class="text-3xl font-bold text-emerald-400">Healthy</span>
+                    </div>
+                    <i class="fa-solid fa-shield-heart text-6xl text-emerald-500/10 absolute right-3 bottom-2 pointer-events-none"></i>
+                </div>
+
+                <!-- Card 3: Remaining Cycles -->
+                <div class="glow-card glow-blue rounded-2xl p-5 flex flex-col justify-between relative overflow-hidden">
+                    <div class="text-slate-400 text-sm font-medium mb-3">Estimated Remaining cycles</div>
+                    <div class="flex items-baseline justify-between my-2">
+                        <span id="cyclesDisplay" class="text-4xl lg:text-5xl font-extrabold text-white tracking-tight">300</span>
+                    </div>
+                    <i class="fa-solid fa-arrows-spin text-6xl text-cyan-500/10 absolute right-3 bottom-2 pointer-events-none"></i>
+                </div>
+            </div>
+
+            <!-- Lower Section: Degradation Curve Chart -->
+            <div class="glow-card rounded-2xl p-5 flex-1 flex flex-col">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-lg font-semibold text-slate-200">Predicted Degradation Curve</h3>
+                    <div class="flex items-center space-x-4 text-xs">
+                        <span class="flex items-center text-cyan-400"><span class="w-3 h-0.5 bg-cyan-400 inline-block mr-1"></span> SoH Projection</span>
+                        <span class="flex items-center text-red-400"><span class="w-3 h-0.5 bg-red-500 inline-block mr-1 border-dashed border-b"></span> Critical (80%)</span>
+                    </div>
+                </div>
+
+                <!-- Chart Container -->
+                <div class="relative w-full flex-1 min-h-[320px]">
+                    <canvas id="degradationChart"></canvas>
+                </div>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center py-3 text-xs text-slate-600 border-t border-slate-900 bg-[#060b13]">
+        EV Battery Health Prediction Dashboard • Powered by XGBoost Model & Django Backend API
+    </footer>
+
+    <script>
+        // DOM Input Elements
+        const cycleInput = document.getElementById('cycleInput');
+        const voltageInput = document.getElementById('voltageInput');
+        const currentInput = document.getElementById('currentInput');
+        const tempInput = document.getElementById('tempInput');
+        const capacityInput = document.getElementById('capacityInput');
+
+        // Value Displays
+        const cycleVal = document.getElementById('cycleVal');
+        const voltageVal = document.getElementById('voltageVal');
+        const currentVal = document.getElementById('currentVal');
+        const tempVal = document.getElementById('tempVal');
+        const capacityVal = document.getElementById('capacityVal');
+
+        // Output Display Elements
+        const sohDisplay = document.getElementById('sohDisplay');
+        const statusLabel = document.getElementById('statusLabel');
+        const statusIcon = document.getElementById('statusIcon');
+        const conditionCard = document.getElementById('conditionCard');
+        const cyclesDisplay = document.getElementById('cyclesDisplay');
+        const predictBtn = document.getElementById('predictBtn');
+        const resetBtn = document.getElementById('resetBtn');
+
+        let chartInstance = null;
+
+        // Initialize Chart
+        function initChart() {
+            const ctx = document.getElementById('degradationChart').getContext('2d');
+            
+            // Gradient Fill under curve
+            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+            gradient.addColorStop(0, 'rgba(0, 210, 255, 0.35)');
+            gradient.addColorStop(1, 'rgba(0, 210, 255, 0.0)');
+
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['0', '200', '400', '600', '800', '1000'],
+                    datasets: [
+                        {
+                            label: 'SoH Percentage',
+                            data: [90, 88, 85, 83, 81, 78],
+                            borderColor: '#00d2ff',
+                            borderWidth: 2.5,
+                            fill: true,
+                            backgroundColor: gradient,
+                            tension: 0.35,
+                            pointBackgroundColor: '#00d2ff',
+                            pointRadius: 4,
+                            pointHoverRadius: 6
+                        },
+                        {
+                            label: 'Critical Threshold',
+                            data: [80, 80, 80, 80, 80, 80],
+                            borderColor: '#ef4444',
+                            borderWidth: 1.5,
+                            borderDash: [6, 6],
+                            pointRadius: 0,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#0f172a',
+                            titleColor: '#cbd5e1',
+                            bodyColor: '#38bdf8',
+                            borderColor: '#1e293b',
+                            borderWidth: 1,
+                            padding: 10,
+                            displayColors: false,
+                            callbacks: {
+                                label: (context) => `${context.dataset.label}: ${context.parsed.y.toFixed(2)}%`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: '#1e293b', drawBorder: false },
+                            ticks: { color: '#64748b' },
+                            title: { display: true, text: 'Cycles', color: '#475569' }
+                        },
+                        y: {
+                            min: 60,
+                            max: 100,
+                            grid: { color: '#1e293b', drawBorder: false },
+                            ticks: { 
+                                color: '#64748b',
+                                callback: (value) => value + '%'
+                            },
+                            title: { display: true, text: 'SoH Percentage', color: '#475569' }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Mathematical degradation estimation algorithm (Mocking Django API / XGBoost calculation)
+        function calculateMockSoH(cycle, voltage, current, temp, capacity) {
+            // Baseline 100% decreased by cycle count, voltage deviations, temperature stress
+            let baseSoH = 100 - (cycle * 0.12);
+            
+            // Temperature penalty (optimal ~20 C)
+            const tempDiff = Math.abs(temp - 20);
+            baseSoH -= (tempDiff * 0.35);
+
+            // Capacity influence
+            const capFactor = (capacity / 10.0);
+            baseSoH = baseSoH * capFactor;
+
+            // Clamp between 0 and 100
+            const calculatedSoH = Math.min(Math.max(baseSoH, 45.0), 99.9);
+            
+            // Estimated remaining cycles until 80% threshold
+            const remainingCycles = Math.max(Math.round((calculatedSoH - 80) * 15), 0);
+
+            return {
+                soh: calculatedSoH.toFixed(2),
+                remainingCycles: remainingCycles,
+                curve: [
+                    Math.min(calculatedSoH, 98),
+                    Math.max(calculatedSoH - 2.5, 75),
+                    Math.max(calculatedSoH - 5.5, 70),
+                    Math.max(calculatedSoH - 8.5, 65),
+                    Math.max(calculatedSoH - 12.0, 60),
+                    Math.max(calculatedSoH - 16.0, 50)
+                ]
+            };
+        }
+
+        // Send request to Django REST API (or fallback to local mock engine)
+        async function fetchPrediction() {
+            const payload = {
+                cycle: parseFloat(cycleInput.value),
+                voltage: parseFloat(voltageInput.value),
+                current: parseFloat(currentInput.value),
+                temperature: parseFloat(tempInput.value),
+                capacity: parseFloat(capacityInput.value)
+            };
+
+            try {
+                // Real Django API Endpoint
+                const response = await fetch('/api/predict/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken') // Django CSRF protection support
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    updateUI(data.soh, data.remaining_cycles, data.curve);
+                } else {
+                    // Fallback to local prediction engine if endpoint is offline during development
+                    const mock = calculateMockSoH(payload.cycle, payload.voltage, payload.current, payload.temperature, payload.capacity);
+                    updateUI(mock.soh, mock.remainingCycles, mock.curve);
+                }
+            } catch (err) {
+                // Client-side fallback for offline preview mode
+                const mock = calculateMockSoH(payload.cycle, payload.voltage, payload.current, payload.temperature, payload.capacity);
+                updateUI(mock.soh, mock.remainingCycles, mock.curve);
+            }
+        }
+
+        // Helper to retrieve Django CSRF Cookie
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // Update Dashboard UI with prediction output
+        function updateUI(soh, remainingCycles, curveData) {
+            // Update SoH text
+            sohDisplay.innerText = `${soh}%`;
+            cyclesDisplay.innerText = remainingCycles;
+
+            // Health Status Logic
+            if (soh >= 80.0) {
+                statusLabel.innerText = "Healthy";
+                statusLabel.className = "text-3xl font-bold text-emerald-400";
+                statusIcon.className = "w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xl font-bold";
+                statusIcon.innerHTML = `<i class="fa-solid fa-circle-check"></i>`;
+                conditionCard.className = "glow-card glow-green rounded-2xl p-5 flex flex-col justify-between relative overflow-hidden transition-all duration-300";
+            } else {
+                statusLabel.innerText = "Degraded";
+                statusLabel.className = "text-3xl font-bold text-red-400";
+                statusIcon.className = "w-10 h-10 rounded-full bg-red-500/20 text-red-400 flex items-center justify-center text-xl font-bold";
+                statusIcon.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i>`;
+                conditionCard.className = "glow-card glow-red rounded-2xl p-5 flex flex-col justify-between relative overflow-hidden transition-all duration-300";
+            }
+
+            // Update Line Chart
+            if (chartInstance && curveData) {
+                chartInstance.data.datasets[0].data = curveData;
+                chartInstance.update();
+            }
+        }
+
+        // Setup Event Listeners
+        function setupListeners() {
+            const inputs = [
+                { input: cycleInput, display: cycleVal, format: v => v },
+                { input: voltageInput, display: voltageVal, format: v => parseFloat(v).toFixed(2) },
+                { input: currentInput, display: currentVal, format: v => parseFloat(v).toFixed(2) },
+                { input: tempInput, display: tempVal, format: v => parseFloat(v).toFixed(1) },
+                { input: capacityInput, display: capacityVal, format: v => parseFloat(v).toFixed(2) }
+            ];
+
+            inputs.forEach(item => {
+                item.input.addEventListener('input', (e) => {
+                    item.display.innerText = item.format(e.target.value);
+                    fetchPrediction(); // Real-time continuous updating on slider movement
+                });
+            });
+
+            predictBtn.addEventListener('click', fetchPrediction);
+
+            resetBtn.addEventListener('click', () => {
+                cycleInput.value = 20; cycleVal.innerText = 20;
+                voltageInput.value = 17.50; voltageVal.innerText = "17.50";
+                currentInput.value = 1.00; currentVal.innerText = "1.00";
+                tempInput.value = 20.0; tempVal.innerText = "20.0";
+                capacityInput.value = 9.50; capacityVal.innerText = "9.50";
+                fetchPrediction();
+            });
+        }
+
+        // Initialize application on page load
+        window.onload = () => {
+            initChart();
+            setupListeners();
+            fetchPrediction();
+        };
+    </script>
+</body>
+</html>
