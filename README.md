@@ -6,7 +6,7 @@
 [![Scikit-Learn](https://img.shields.io/badge/Model-Random%20Forest%20%7C%20MLP-yellow.svg)](https://scikit-learn.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-purple.svg)](LICENSE)
 
-An end-to-end Machine Learning web application for **Electric Vehicle (EV) Battery State of Health (SoH) Prediction, Remaining Useful Life (RUL) estimation, and Asset Pack Valuation**. Benchmarked against the **NASA Ames Prognostics Center of Excellence (PCoE) Li-ion Battery Dataset** dynamics and degradation electrochemistry.
+An end-to-end Machine Learning web application for **Electric Vehicle (EV) Battery State of Health (SoH) Prediction, Remaining Useful Life (RUL) estimation, and Asset Pack Valuation**. Benchmarked against the **NASA Ames Prognostics Center of Excellence (PCoE) Li-ion Battery Dataset** dynamics and degradation electrochemistryy.
 
 ---
 
